@@ -8,6 +8,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import java.util.List;
 
@@ -48,9 +50,36 @@ public class MyErrorHandler{
         return ResponseEntity.badRequest().body(errorsList);
     }
 
+    // Archivo mayor que spring.servlet.multipart.max-file-size.
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<?> myMaxUploadSizeExceededException(MaxUploadSizeExceededException e){
+        ErrorResponse response = new ErrorResponse(
+                "El archivo supera el tamaño máximo permitido",
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.value()
+        );
+
+        return ResponseEntity.badRequest().body(response);
+    }
+
+    // Falta un archivo obligatorio del multipart (p. ej. "video" al crear un Multimedia).
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<?> myMissingServletRequestPartException(MissingServletRequestPartException e){
+        ErrorResponse response = new ErrorResponse(
+                "Falta el archivo '" + e.getRequestPartName() + "'",
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.value()
+        );
+
+        return ResponseEntity.badRequest().body(response);
+    }
+
     public record errors(String field, String message){
         public errors (FieldError f){
-            this(f.getField(),f.getDefaultMessage());
+            // Un fallo de conversión (p. ej. texto en un campo numérico de un formulario) trae un mensaje con tipos Java.
+            this(f.getField(), f.isBindingFailure()
+                    ? "El campo tiene un formato inválido"
+                    : f.getDefaultMessage());
         }
     }
 }

@@ -8,6 +8,7 @@ import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -72,5 +73,14 @@ public class JwtUtils {
         String username = getSubject(stringToken);
         return userRepository.findByUsernameAndStatus(username, EUserStatus.ACTIVE)
                 .orElseThrow(()-> new UsernameNotFoundException("Usuario de token invalido"));
+    }
+
+    // Usuario que hace la petición; JwtAuthorizationFilter ya validó el Bearer antes de llegar al controller.
+    public UserEntity getUserFromRequest(HttpServletRequest request) {
+        String headerToken = request.getHeader("Authorization");
+        if (headerToken == null || !headerToken.startsWith("Bearer ")) {
+            throw new UsernameNotFoundException("Usuario de token invalido");
+        }
+        return getUserFromToken(headerToken.substring(7));
     }
 }

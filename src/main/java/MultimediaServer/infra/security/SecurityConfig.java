@@ -6,6 +6,7 @@ import MultimediaServer.infra.security.utils.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -47,7 +48,22 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth->{
                     // /error publico: si no, cualquier 404/500 se reenvia ahi sin autenticar y acaba en 401/403.
                     auth.requestMatchers("/error").permitAll();
-                    // Reglas por rol aqui, p. ej.: auth.requestMatchers("/admin/**").hasRole("ADMIN");
+                    // Listar y crear usuarios es solo de ADMIN; el resto de reglas de /users depende
+                    // del usuario objetivo y se valida en UserService.
+                    auth.requestMatchers(HttpMethod.GET, "/users").hasRole("ADMIN");
+                    auth.requestMatchers(HttpMethod.POST, "/users").hasRole("ADMIN");
+                    // Géneros: cualquier usuario autenticado los consulta; solo ADMIN los gestiona.
+                    auth.requestMatchers(HttpMethod.POST, "/genres").hasRole("ADMIN");
+                    auth.requestMatchers(HttpMethod.PUT, "/genres").hasRole("ADMIN");
+                    auth.requestMatchers(HttpMethod.DELETE, "/genres/*").hasRole("ADMIN");
+                    // Películas y series: igual que los géneros.
+                    auth.requestMatchers(HttpMethod.POST, "/movies-series").hasRole("ADMIN");
+                    auth.requestMatchers(HttpMethod.PUT, "/movies-series").hasRole("ADMIN");
+                    auth.requestMatchers(HttpMethod.DELETE, "/movies-series/*").hasRole("ADMIN");
+                    // Archivos multimedia: igual que el catálogo.
+                    auth.requestMatchers(HttpMethod.POST, "/multimedia").hasRole("ADMIN");
+                    auth.requestMatchers(HttpMethod.PUT, "/multimedia").hasRole("ADMIN");
+                    auth.requestMatchers(HttpMethod.DELETE, "/multimedia/*").hasRole("ADMIN");
                     auth.anyRequest().authenticated();
                 })
                 .sessionManagement(session->{
@@ -61,6 +77,14 @@ public class SecurityConfig {
                         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
                         response.getWriter().write(
                                 "{\"message\":\"Se requiere autenticacion\",\"code\":401,\"status\":401}");
+                    });
+                    // Autenticado pero sin el rol requerido → 403 en JSON (por defecto, sin cuerpo).
+                    ex.accessDeniedHandler((request, response, accessDeniedException)->{
+                        response.setStatus(HttpStatus.FORBIDDEN.value());
+                        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+                        response.getWriter().write(
+                                "{\"message\":\"No tienes permisos para realizar esta accion\",\"code\":403,\"status\":403}");
                     });
                 })
                 .addFilter(jwtAuthenticationFilter)

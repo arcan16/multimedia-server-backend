@@ -14,9 +14,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.regex.Pattern;
 
 @Component
 public class JwtAuthorizationFilter extends OncePerRequestFilter {
+
+    private static final Pattern VIDEO_STREAM_PATH = Pattern.compile("^/multimedia/\\d+/video$");
 
     @Autowired
     private JwtUtils jwtUtils;
@@ -28,9 +31,16 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String headerToken = request.getHeader("Authorization");
+        String stringToken = null;
 
         if(headerToken!=null && headerToken.startsWith("Bearer ")){
-            String stringToken = headerToken.substring(7);
+            stringToken = headerToken.substring(7);
+        } else if (isVideoStreamRequest(request)) {
+            // <video src> no puede enviar cabeceras: solo el streaming acepta el token como ?token=.
+            stringToken = request.getParameter("token");
+        }
+
+        if(stringToken!=null && !stringToken.isBlank()){
             try {
                 if(jwtUtils.isValidToken(stringToken)){
                     String username = jwtUtils.getSubject(stringToken);
@@ -53,5 +63,10 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
             }
         }
         filterChain.doFilter(request,response);
+    }
+
+    private boolean isVideoStreamRequest(HttpServletRequest request) {
+        return "GET".equals(request.getMethod())
+                && VIDEO_STREAM_PATH.matcher(request.getServletPath()).matches();
     }
 }

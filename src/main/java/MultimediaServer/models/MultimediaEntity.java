@@ -8,6 +8,7 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+// active_flag es una columna generada por MySQL (unicidad de episodios entre registros no borrados, V3): no se mapea.
 @Entity
 @Table(name = "MULTIMEDIA")
 @Getter

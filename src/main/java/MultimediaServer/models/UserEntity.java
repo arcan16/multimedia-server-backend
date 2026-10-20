@@ -53,4 +53,8 @@ public class UserEntity {
 
     @Column(name = "deleted_by")
     private Long deletedBy;
+
+    // Lado inverso del 1:1 con PERSONS (PK compartida). Puede ser null: el admin inicial no tiene persona.
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    private PersonEntity person;
 }
