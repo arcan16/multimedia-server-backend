@@ -3,36 +3,30 @@ package MultimediaServer.infra.security;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
 
+import java.util.List;
+
+// Lo usa el CorsFilter de Spring Security (http.cors() en SecurityConfig), que va antes de la autenticación:
+// así el preflight OPTIONS se responde sin token y las respuestas 401/403 también llevan las cabeceras CORS.
 @Configuration
 public class CorsConfig {
     @Bean
-    public CorsFilter corsFilter() {
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // Permitir solicitudes desde todos los orígenes
-        /*config.addAllowedOrigin("http://localhost:5173");
-        config.addAllowedOrigin("http://192.168.0.6:5173");
-        config.addAllowedOrigin("http://192.168.0.11:5173");*/
-        config.addAllowedOrigin("*");
-        // Permitir todos los métodos (GET, POST, PUT, DELETE, etc.)
-        config.addAllowedMethod("*");
-
-        // Permitir los encabezados que desees (por ejemplo, "Content-Type", "Authorization")
-        config.addAllowedHeader("*");
-
-        // Esta es la clave para permitir cookies, por ejemplo, para la autenticación basada en cookies
-//        config.setAllowCredentials(false);
+        // Cualquier origen y sin credenciales: el token viaja en la cabecera Authorization, no en cookies.
+        config.setAllowedOriginPatterns(List.of("*"));
         config.setAllowCredentials(false);
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Range"));
+        // Location: URL del recurso creado en los POST. Content-Range/Accept-Ranges: streaming de vídeo.
+        config.setExposedHeaders(List.of("Location", "Content-Range", "Accept-Ranges", "Content-Disposition"));
+        config.setMaxAge(3600L);
 
-        // Especificar los encabezados que pueden ser expuestos al cliente
-        config.addExposedHeader("filename");
-
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
-
-        return new CorsFilter(source);
+        return source;
     }
 }

@@ -10,6 +10,7 @@ import MultimediaServer.infra.services.AuditLogService;
 import MultimediaServer.infra.services.FileStorageService;
 import MultimediaServer.models.GenreEntity;
 import MultimediaServer.models.MovieSeriesEntity;
+import MultimediaServer.models.enums.EMovieSeriesType;
 import MultimediaServer.models.MultimediaEntity;
 import MultimediaServer.models.UserEntity;
 import MultimediaServer.models.enums.EAuditAction;
@@ -80,11 +81,9 @@ public class MovieSeriesService {
 
     // name opcional: filtra por nombre que contenga el texto, sin distinguir mayúsculas.
     @Transactional(readOnly = true)
-    public List<FullMovieSeriesDTO> getAll(String name, Pageable page) {
-        var result = name == null || name.isBlank()
-                ? movieSeriesRepository.findAllByDeletedAtIsNull(page)
-                : movieSeriesRepository.findAllByNameContainingIgnoreCaseAndDeletedAtIsNull(name.trim(), page);
-        return result.map(FullMovieSeriesDTO::new).toList();
+    public List<FullMovieSeriesDTO> getAll(String name, EMovieSeriesType type, Long genreId, Pageable page) {
+        String nameFilter = name == null || name.isBlank() ? null : name.trim();
+        return movieSeriesRepository.search(nameFilter, type, genreId, page).map(FullMovieSeriesDTO::new).toList();
     }
 
     @Transactional(readOnly = true)

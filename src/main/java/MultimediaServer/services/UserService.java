@@ -77,6 +77,11 @@ public class UserService {
         return new FullUserDTO(findActive(id));
     }
 
+    @Transactional(readOnly = true)
+    public FullUserDTO getMe(HttpServletRequest request) {
+        return new FullUserDTO(jwtUtils.getUserFromRequest(request));
+    }
+
     // Solo ADMIN (restringido en SecurityConfig). Puede crear cuentas ADMIN y USER.
     @Transactional
     public FullUserDTO create(CreateUserDTO dto, HttpServletRequest request) {

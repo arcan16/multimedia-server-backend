@@ -2,6 +2,8 @@ package MultimediaServer.infra.security.filters;
 
 import MultimediaServer.infra.security.utils.JwtUtils;
 import MultimediaServer.models.UserEntity;
+import MultimediaServer.models.enums.EUserStatus;
+import MultimediaServer.repositories.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -23,9 +25,11 @@ import java.util.Map;
 
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
     private JwtUtils jwtUtils;
+    private UserRepository userRepository;
 
-    public JwtAuthenticationFilter(JwtUtils jwtUtils){
+    public JwtAuthenticationFilter(JwtUtils jwtUtils, UserRepository userRepository){
         this.jwtUtils=jwtUtils;
+        this.userRepository=userRepository;
     }
 
     @Override
@@ -53,11 +57,16 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 
         User user = (User) authResult.getPrincipal();
         String token = jwtUtils.generateAccessToken(user.getUsername());
+        // El cliente necesita id y rol para saber qué puede hacer sin otra petición.
+        UserEntity userEntity = userRepository.findByUsernameAndStatus(user.getUsername(), EUserStatus.ACTIVE)
+                .orElseThrow(() -> new AuthenticationServiceException("El usuario autenticado ya no existe"));
 
         Map<String, Object> httpResponse = new HashMap<>();
         httpResponse.put("Authentication", token);
         httpResponse.put("message","Autenticacion exitosa!!!");
         httpResponse.put("username", user.getUsername());
+        httpResponse.put("id", userEntity.getId());
+        httpResponse.put("rol", userEntity.getRol().name());
 
         // No se llama a super.successfulAuthentication: es stateless y su success handler intentaría redirigir.
         writeJson(response, HttpStatus.OK, httpResponse);

@@ -3,6 +3,7 @@ package MultimediaServer.infra.security;
 import MultimediaServer.infra.security.filters.JwtAuthenticationFilter;
 import MultimediaServer.infra.security.filters.JwtAuthorizationFilter;
 import MultimediaServer.infra.security.utils.JwtUtils;
+import MultimediaServer.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,6 +11,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -36,18 +38,25 @@ public class SecurityConfig {
     @Autowired
     private JwtAuthorizationFilter jwtAuthorizationFilter;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity,
                                             AuthenticationManager authenticationManager) throws Exception {
-        JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtUtils);
+        JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtUtils, userRepository);
         jwtAuthenticationFilter.setAuthenticationManager(authenticationManager);
         jwtAuthenticationFilter.setFilterProcessesUrl("/login");
 
         return httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
+                // Usa el CorsConfigurationSource de CorsConfig; el filtro CORS responde el preflight antes de autenticar.
+                .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth->{
                     // /error publico: si no, cualquier 404/500 se reenvia ahi sin autenticar y acaba en 401/403.
                     auth.requestMatchers("/error").permitAll();
+                    // Preflight CORS: el navegador nunca manda el token en un OPTIONS.
+                    auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
                     // Listar y crear usuarios es solo de ADMIN; el resto de reglas de /users depende
                     // del usuario objetivo y se valida en UserService.
                     auth.requestMatchers(HttpMethod.GET, "/users").hasRole("ADMIN");

@@ -32,6 +32,12 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
 
+    // Cualquier usuario autenticado: devuelve su propia cuenta.
+    @GetMapping("/me")
+    public ResponseEntity<?> getMe(HttpServletRequest request) {
+        return ResponseEntity.ok(userService.getMe(request));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<?> getById(@PathVariable Long id, HttpServletRequest request) {
         return ResponseEntity.ok(userService.getById(id, request));

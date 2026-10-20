@@ -3,6 +3,7 @@ package MultimediaServer.controllers;
 import MultimediaServer.dto.movieseries.CreateMovieSeriesDTO;
 import MultimediaServer.dto.movieseries.FullMovieSeriesDTO;
 import MultimediaServer.dto.movieseries.UpdateMovieSeriesDTO;
+import MultimediaServer.models.enums.EMovieSeriesType;
 import MultimediaServer.services.MovieSeriesService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -29,8 +30,10 @@ public class MovieSeriesController {
 
     @GetMapping
     public ResponseEntity<?> getAll(@RequestParam(required = false) String name,
+                                    @RequestParam(required = false) EMovieSeriesType type,
+                                    @RequestParam(required = false) Long genreId,
                                     @PageableDefault(size = 10) Pageable page) {
-        List<FullMovieSeriesDTO> moviesSeries = movieSeriesService.getAll(name, page);
+        List<FullMovieSeriesDTO> moviesSeries = movieSeriesService.getAll(name, type, genreId, page);
         if (moviesSeries.isEmpty()) {
             return ResponseEntity.ok("{\"message\":\"No existen películas o series registradas\"}");
         }

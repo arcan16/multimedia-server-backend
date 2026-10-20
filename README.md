@@ -62,7 +62,7 @@ Content-Type: application/json
 ```
 
 ```json
-{ "Authentication": "<jwt>", "username": "admin", "message": "Autenticacion exitosa!!!" }
+{ "Authentication": "<jwt>", "username": "admin", "id": 1, "rol": "ADMIN", "message": "Autenticacion exitosa!!!" }
 ```
 
 En el resto de peticiones, el token va en la cabecera:
@@ -73,6 +73,8 @@ Authorization: Bearer <jwt>
 
 Solo los usuarios con estado `ACTIVE` pueden iniciar sesión. El token guarda el nombre de usuario, así que si un usuario cambia su propio nombre tiene que volver a hacer login.
 
+La API admite CORS desde cualquier origen, sin credenciales (cabeceras `Authorization`, `Content-Type` y `Range`; expone `Location`). El preflight `OPTIONS` se responde sin token.
+
 ## Endpoints
 
 Los listados son paginados (`?page=0&size=10&sort=campo,asc`, 10 por defecto). `PUT` recibe el `id` en el cuerpo, no en la URL.
@@ -82,6 +84,7 @@ Los listados son paginados (`?page=0&size=10&sort=campo,asc`, 10 por defecto). `
 | Método | Ruta | ADMIN | USER |
 |---|---|---|---|
 | `GET` | `/users` | Sí | No |
+| `GET` | `/users/me` | Su cuenta | Su cuenta |
 | `GET` | `/users/{id}` | Cualquier usuario | Solo su cuenta |
 | `POST` | `/users` | Crea cuentas ADMIN o USER | No |
 | `PUT` | `/users` | Su cuenta y las de USER, nunca la de otro ADMIN | Solo su cuenta, sin cambiar su rol |
@@ -108,7 +111,7 @@ Los listados son paginados (`?page=0&size=10&sort=campo,asc`, 10 por defecto). `
 
 | Método | Ruta | Quién |
 |---|---|---|
-| `GET` | `/movies-series?name=` | Cualquier usuario autenticado (`name` filtra por texto) |
+| `GET` | `/movies-series?name=&type=&genreId=` | Cualquier usuario autenticado. Filtros opcionales y combinables: `name` (texto), `type` (`MOVIE`/`SERIE`), `genreId` |
 | `GET` | `/movies-series/{id}` | Cualquier usuario autenticado |
 | `GET` | `/movies-series/{id}/poster` | Cualquier usuario autenticado. Devuelve la imagen |
 | `POST` / `PUT` | `/movies-series` | ADMIN. Usa `multipart/form-data` |
